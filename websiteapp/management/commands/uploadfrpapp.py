@@ -53,8 +53,9 @@ class Command(BaseCommand):
             website_group = WebSiteGroup.objects.filter(name=group_name).first()
             if not website_group:
                 website_group = WebSiteGroup.objects.create(name=group_name)
+            remote_port = proxy.get('conf', {}).get('remote_port')
             web_site = WebSite.objects.filter(title=site_name).first()
-            path = f"http://{host}:{port}"
+            path = f"http://{host}:{remote_port}"
             if not web_site:
                 WebSite.objects.create(
                     path=path,
@@ -65,4 +66,5 @@ class Command(BaseCommand):
             else:
                 web_site.path = path
                 web_site.website_group_id = website_group.pk
+                web_site.save()
             print(proxy)
