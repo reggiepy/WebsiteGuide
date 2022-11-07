@@ -14,19 +14,19 @@
 
 ### 网址导航
 
-![image](https://github.com/mizhexiaoxiao/WebsiteGuide/blob/main/websiteapp/media/sample-picture/5.jpg)
+![image](https://github.com/reggiepy/WebsiteGuide/blob/main/websiteapp/media/sample-picture/5.jpg)
 
 ### 支持批量添加
 
-![image](https://github.com/mizhexiaoxiao/WebsiteGuide/blob/main/websiteapp/media/sample-picture/6.jpg)
+![image](https://github.com/reggiepy/WebsiteGuide/blob/main/websiteapp/media/sample-picture/6.jpg)
 
 ### 网址管理
 
-![image](https://github.com/mizhexiaoxiao/WebsiteGuide/blob/main/websiteapp/media/sample-picture/7.jpg)
+![image](https://github.com/reggiepy/WebsiteGuide/blob/main/websiteapp/media/sample-picture/7.jpg)
 
 ### 用户管理
 
-![image](https://github.com/mizhexiaoxiao/WebsiteGuide/blob/main/websiteapp/media/sample-picture/8.jpg)
+![image](https://github.com/reggiepy/WebsiteGuide/blob/main/websiteapp/media/sample-picture/8.jpg)
 
 ### 演示地址
 
@@ -42,8 +42,8 @@ password：admin@1234
 #### 方法一：dockerhub拉取镜像
 
 ```sh
-docker pull mizhexiaoxiao/websiteguide:latest 
-docker run -d --restart=always --name=websiteguide -p 8000:80 mizhexiaoxiao/websiteguide
+docker pull reggiepy/websiteguide:latest 
+docker run -d --restart=always --name=websiteguide -p 8000:80 reggiepy/websiteguide
 ```
 
 #### 方法二：dockerfile构建镜像
@@ -57,7 +57,7 @@ systemctl start docker
 ##### 构建镜像
 
 ```sh
-git clone https://github.com/mizhexiaoxiao/WebDockerfile.git
+git clone https://github.com/reggiepy/WebDockerfile.git
 cd WebDockerfile
 docker build --no-cache . -t websiteguide
 ```
