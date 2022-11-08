@@ -2,7 +2,6 @@
 # @Author : Reggie
 # @Time : 2022/11/7 9:43
 import argparse
-import json
 
 import requests
 from django.core.management import BaseCommand
@@ -18,13 +17,28 @@ class Command(BaseCommand):
     HTTP_API = "api/proxy/http"
     HTTPS_API = "api/proxy/https"
     STCP_API = "api/proxy/stcp"
+    ignore_name = [
+        "ssh",
+        "mysql",
+        "redis",
+        "rdp",
+        "windows",
+    ]
 
     def add_arguments(self, parser: argparse.ArgumentParser):
         parser.add_argument("-host", "--host", dest="host", required=True)
         parser.add_argument("-p", "--port", dest="port", required=False, default=7500, type=int)
         parser.add_argument("-s", "--secure", dest="secure", required=False, default=False, type=bool)
 
+    @classmethod
+    def is_ignore_name(cls, name):
+        for n in cls.ignore_name:
+            if n in name:
+                return True
+        return False
+
     def handle(self, *args, **options):
+
         session = requests.session()
         session.auth = HTTPBasicAuth("admin", "wangtong")
         secure = options.get("secure")
@@ -34,18 +48,22 @@ class Command(BaseCommand):
 
         url = f"{base_host}/{self.SERVER_INFO}"
         resp = session.get(url)
-        print(resp.json())
+        # print(resp.json())
 
         url = f"{base_host}/{self.TCP_API}"
         resp = session.get(url)
         WebSite.objects.filter()
         WebSiteGroup.objects.filter()
-        print(json.dumps(resp.json(), indent=4))
+        # print(json.dumps(resp.json(), indent=4))
         proxies = resp.json().get('proxies', {})
         for proxy in proxies:
             name = proxy.get('name')
             if not name:
                 continue
+            if self.is_ignore_name(name):
+                print("Ignoring name: {}".format(name))
+                continue
+
             name_split = name.split('-')
             if len(name_split) != 2:
                 continue
@@ -67,4 +85,5 @@ class Command(BaseCommand):
                 web_site.path = path
                 web_site.website_group_id = website_group.pk
                 web_site.save()
-            print(proxy)
+            print("add proxy: {}".format(name))
+            # print(proxy)
