@@ -59,10 +59,10 @@ class Command(BaseCommand):
     ]
 
     def add_arguments(self, parser: argparse.ArgumentParser):
-        parser.add_argument("-host", "--host", dest="host", required=True)
+        parser.add_argument("-H", "--host", dest="host", required=True)
         parser.add_argument("-p", "--port", dest="port", required=False, default=7500, type=int)
         parser.add_argument("-s", "--secure", dest="secure", required=False, default=False, type=bool)
-        parser.add_argument("--verbose", dest="verbose", required=False, default=False, type=bool)
+        parser.add_argument("-V", "--verbose", dest="verbose", required=False, default=False, type=bool)
 
     @classmethod
     def is_ignore_name(cls, name):
