@@ -175,6 +175,7 @@ class Command(BaseCommand):
             conf = proxy.get('conf')
             if not conf:
                 logger.warning(f"{name} has no conf")
+                continue
             remote_port = conf.get('remote_port')
             sites.append(
                 {
