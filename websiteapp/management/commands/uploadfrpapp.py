@@ -170,7 +170,12 @@ class Command(BaseCommand):
                 continue
             group_name, site_name = name_split
             groups.append(group_name)
-            remote_port = proxy.get('conf', {}).get('remote_port')
+            if not proxy:
+                continue
+            conf = proxy.get('conf')
+            if not conf:
+                logger.warning(f"{name} has no conf")
+            remote_port = conf.get('remote_port')
             sites.append(
                 {
                     "name": name,
