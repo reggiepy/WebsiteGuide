@@ -8,6 +8,7 @@ from django.core.management import BaseCommand
 from requests.auth import HTTPBasicAuth
 
 from websiteapp.models import WebSite, WebSiteGroup
+from django.db.models import Q
 
 
 def bytes2x(n: int, position: int = 2, base=1024, u=0, show_symbol=True) -> str:
@@ -72,11 +73,20 @@ class Command(BaseCommand):
         return False
 
     @classmethod
-    def handle_groups(cls, groups):
+    def handle_groups(cls, group_names):
         result = []
-        groups.sort(key=lambda x: x)
-        for group in groups:
-            group_name = group
+        group_names_copy = group_names.copy()
+        group_names = list(set(group_names))
+        group_names.sort(key=group_names_copy.index)
+        for group_name in group_names:
+            # website_group, created = WebSiteGroup.objects.update_or_create(
+            #     defaults={"name": group_name},
+            #     name=group_name
+            # )
+            # if created:
+            #     logger.debug(f"create: {website_group.name}")
+            # else:
+            #     logger.debug(f"update: {website_group.name}")
             website_group = WebSiteGroup.objects.filter(name=group_name).first()
             if not website_group:
                 website_group = WebSiteGroup.objects.create(name=group_name)
@@ -85,33 +95,36 @@ class Command(BaseCommand):
         return result
 
     @classmethod
-    def handle_sites(cls, sites, groups):
-        group_map = {group.name: group.pk for group in groups}
-        sites.sort(key=lambda x: x["site_name"])
-        for site in sites:
-            name = site["name"]
-            site_name = site["site_name"]
-            remote_port = site["remote_port"]
-            group_name = site["group_name"]
-            host = site["host"]
-            web_site = WebSite.objects.filter(title=site_name).first()
+    def handle_tcp_proxies(cls, proxies, group_objs):
+        group_obj_map = {group_obj.name: group_obj.pk for group_obj in group_objs}
+        proxies.sort(key=lambda x: x["site_name"])
+        for proxy in proxies:
+            name = proxy["name"]
+            site_name = proxy["site_name"]
+            group_name = proxy["group_name"]
+            host = proxy["host"]
+            conf = proxy.get("conf", {})
+            remote_port = conf.get('remote_port')
             path = f"http://{host}:{remote_port}"
+
+            # 先获取 path 相同的，再获取title相同的
+            web_site = WebSite.objects.filter(Q(path=path) | Q(title=site_name)).first()
             if not web_site:
                 WebSite.objects.create(
                     path=path,
                     title=site_name,
                     description=site_name,
-                    website_group_id=group_map[group_name]
+                    website_group_id=group_obj_map[group_name]
                 )
                 logger.debug(f"add proxy: {name}")
             else:
                 web_site.path = path
-                web_site.website_group_id = group_map[group_name]
+                web_site.website_group_id = group_obj_map[group_name]
                 web_site.save()
                 logger.debug(f"update proxy: {name}")
 
     @classmethod
-    def show_server(cls, server_info):
+    def print_server_info(cls, server_info):
         ignore_key = [
             'vhost_http_port',
             'vhost_https_port',
@@ -126,15 +139,14 @@ class Command(BaseCommand):
                 continue
             if k in ["total_traffic_in", "total_traffic_out"]:
                 v = bytes2x(v)
-            line = f"{f'|  {k} :'.ljust(25, ' ')} {str(v).ljust(12, ' ')} |"
+            line = f"{f'|  {k} :'.ljust(30, ' ')} {str(v).ljust(12, ' ')} |"
             max_line = len(line)
             lines.append(line)
-        logger.info(" fro info ".center(max_line, "-"))
+        logger.info(" frp info ".center(max_line, "-"))
         [logger.info(line) for line in lines]
         logger.info("".center(max_line, "-"))
 
     def handle(self, *args, **options):
-
         session = requests.session()
         session.auth = HTTPBasicAuth("admin", "wangtong")
         secure = options.get("secure")
@@ -147,16 +159,13 @@ class Command(BaseCommand):
 
         url = f"{base_host}/{self.SERVER_INFO}"
         resp = session.get(url)
-        self.show_server(resp.json())
+        self.print_server_info(resp.json())
 
         url = f"{base_host}/{self.TCP_API}"
         resp = session.get(url)
-        WebSite.objects.filter()
-        WebSiteGroup.objects.filter()
-        # print(json.dumps(resp.json(), indent=4))
         proxies = resp.json().get('proxies', {})
-        groups = []
-        sites = []
+        group_names = []
+        tcp_proxies = []
         for proxy in proxies:
             name = proxy.get('name')
             if not name:
@@ -169,21 +178,19 @@ class Command(BaseCommand):
             if len(name_split) != 2:
                 continue
             group_name, site_name = name_split
-            groups.append(group_name)
+            group_names.append(group_name)
             if not proxy:
                 continue
             conf = proxy.get('conf')
             if not conf:
-                logger.warning(f"{name} has no conf")
+                logger.warning(f"【{name}】 has no conf")
                 continue
-            remote_port = conf.get('remote_port')
-            sites.append(
-                {
-                    "name": name,
-                    "site_name": site_name,
-                    "host": host,
-                    "group_name": group_name,
-                    "remote_port": remote_port,
-                }
-            )
-        self.handle_sites(sites, self.handle_groups(groups))
+            proxy_type = conf.get("type")
+            if proxy_type != "tcp":
+                logger.warning(f"【{name}】 不支持非 tcp")
+                continue
+            proxy['host'] = host
+            proxy['site_name'] = site_name
+            proxy['group_name'] = group_name
+            tcp_proxies.append(proxy)
+        self.handle_tcp_proxies(tcp_proxies, self.handle_groups(group_names))
