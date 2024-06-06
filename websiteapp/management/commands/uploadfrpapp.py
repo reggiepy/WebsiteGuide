@@ -185,8 +185,7 @@ class Command(BaseCommand):
             if not conf:
                 logger.warning(f"【{name}】 has no conf")
                 continue
-            proxy_type = conf.get("type")
-            print(conf)
+            proxy_type = conf.get("proxy_type")
             if proxy_type != "tcp":
                 logger.warning(f"【{name}】 不支持的类型{proxy_type}")
                 continue
