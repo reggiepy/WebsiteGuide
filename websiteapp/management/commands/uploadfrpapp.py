@@ -187,7 +187,7 @@ class Command(BaseCommand):
                 continue
             proxy_type = conf.get("type")
             if proxy_type != "tcp":
-                logger.warning(f"【{name}】 不支持非 tcp")
+                logger.warning(f"【{name}】 不支持的类型{proxy_type}")
                 continue
             proxy['host'] = host
             proxy['site_name'] = site_name
